@@ -2166,7 +2166,7 @@ inline void gcode_G28() {
       case MeshStart:
         mbl.reset();
         probe_point = 0;
-        enqueuecommands_P(PSTR("G28\nG29 S2"));		//G28 -> Zuerst Homeing
+        enqueuecommands_P(PSTR("G28\nG99 S2"));		//G28 -> Zuerst Homeing
         break;
 
       case MeshNext:
@@ -2175,21 +2175,69 @@ inline void gcode_G28() {
           return;
         }
         if (probe_point == 0) {
-          // Set Z to a positive value before recording the first Z.
-          current_position[Z_AXIS] = MESH_HOME_SEARCH_Z;
-          sync_plan_position();
+          //// Set Z to a positive value before recording the first Z.
+		  //SERIAL_PROTOCOLLNPGM("ProbePoint 0, z=");
+		  //SERIAL_PROTOCOL(current_position[Z_AXIS]);
+		  //SERIAL_PROTOCOLLNPGM("\n");
+          ////current_position[Z_AXIS] = MESH_HOME_SEARCH_Z;
+          ////sync_plan_position();
+		  //SERIAL_PROTOCOLLNPGM("nach SyncPlanPos, z=");
+		  //SERIAL_PROTOCOL(current_position[Z_AXIS]);
+		  //SERIAL_PROTOCOLLNPGM("\n");
         }
         else {
           // For others, save the Z of the previous point, then raise Z again.
           ix = (probe_point - 1) % MESH_NUM_X_POINTS;
           iy = (probe_point - 1) / MESH_NUM_X_POINTS;
           if (iy & 1) ix = (MESH_NUM_X_POINTS - 1) - ix; // zig-zag
+		  
+		 
 //FLO AUTOMESH
-feedrate = homing_feedrate[Z_AXIS];
+	//ENDSTOPS AKTIVIEREN
+    saved_feedrate = feedrate;
+    saved_feedrate_multiplier = feedrate_multiplier;
+    feedrate_multiplier = 100;
+    refresh_cmd_timeout();
+    enable_endstops(true); 
+	// /ENDSTOPS AKTIVIEREN
+
+// ES FOLGT: INHALT VON    do_blocking_move_to(current_position[X_AXIS], current_position[Y_AXIS], MESH_HOME_SEARCH_Z); // this also updates current_position
+    float oldFeedRate = feedrate;
+
+    #ifdef DELTA
+
+    feedrate = XY_TRAVEL_SPEED;
+    
+    destination[X_AXIS] = current_position[X_AXIS];
+    destination[Y_AXIS] = current_position[Y_AXIS];
+    destination[Z_AXIS] = current_position[Z_AXIS]+5;
+    prepare_move_raw(); // this will also set_current_to_destination
+    st_synchronize();
+
+    #else
+
+    feedrate = homing_feedrate[Z_AXIS];
+
+    current_position[Z_AXIS] = current_position[Z_AXIS] + 5;
+    line_to_current_position();
+    st_synchronize();
+
+    feedrate =300;
+
+    line_to_current_position();
+    st_synchronize();
+
+    #endif
+
+    feedrate = oldFeedRate;
+	
+//ENDE DOBLOCKING MOVE
+
+feedrate = homing_feedrate[Z_AXIS];	//ok
 // move down until you find the bed
-float zPosition = -10;
-line_to_z(zPosition);
-st_synchronize();
+float zPosition = -10;//ok
+line_to_z(zPosition);//ok
+st_synchronize();//ok
 
 // we have to let the planner know where we are right now as it is not where we said to go.
 zPosition = st_get_position_mm(Z_AXIS);
@@ -2213,6 +2261,8 @@ endstops_hit_on_purpose(); // clear endstop hit flags
 current_position[Z_AXIS] = st_get_position_mm(Z_AXIS);
 sync_plan_position();
 //***************	  
+
+
           mbl.set_z(ix, iy, current_position[Z_AXIS]);
           current_position[Z_AXIS] = MESH_HOME_SEARCH_Z;
           plan_buffer_line(current_position[X_AXIS], current_position[Y_AXIS], current_position[Z_AXIS], current_position[E_AXIS], homing_feedrate[X_AXIS]/60, active_extruder);
@@ -2297,6 +2347,8 @@ sync_plan_position();
    *  v Y-axis
    *  
    */
+  
+  //FLO: AUTOMESH: ORIGINAL G29
   inline void gcode_G29() {
 
     static int probe_point = -1;
