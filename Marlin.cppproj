@@ -571,6 +571,9 @@
     <Compile Include="SdVolume.h">
       <SubType>compile</SubType>
     </Compile>
+    <Compile Include="Visual Micro\.Marlin.vsarduino.h">
+      <SubType>compile</SubType>
+    </Compile>
     <Compile Include="watchdog.cpp">
       <SubType>compile</SubType>
     </Compile>
@@ -649,9 +652,6 @@
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="vector_3.h">
-      <SubType>compile</SubType>
-    </Compile>
-    <Compile Include="Visual Micro\.Marlin.vsarduino.h">
       <SubType>compile</SubType>
     </Compile>
   </ItemGroup>

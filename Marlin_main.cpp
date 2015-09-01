@@ -1903,14 +1903,14 @@ inline void gcode_G28() {
 
         // Raise Z before homing any other axes
         // (Does this need to be "negative home direction?" Why not just use Z_RAISE_BEFORE_HOMING?)
-        destination[Z_AXIS] = -Z_RAISE_BEFORE_HOMING * home_dir(Z_AXIS);
-        feedrate = max_feedrate[Z_AXIS] * 60;
-		  SERIAL_ECHO_START;
-		  SERIAL_ECHOPAIR("z dest:", destination[Z_AXIS]);
-		  SERIAL_ECHOLN("");
-		
-        line_to_destination();
-        st_synchronize();
+        //destination[Z_AXIS] = -Z_RAISE_BEFORE_HOMING * home_dir(Z_AXIS);
+        //feedrate = max_feedrate[Z_AXIS] * 60;
+		  //SERIAL_ECHO_START;
+		  //SERIAL_ECHOPAIR("z dest:", destination[Z_AXIS]);
+		  //SERIAL_ECHOLN("");
+		//
+        //line_to_destination();
+        //st_synchronize();
 
       #endif
 
@@ -2008,7 +2008,7 @@ inline void gcode_G28() {
             // then this may not work as expected.
             destination[X_AXIS] = round(Z_SAFE_HOMING_X_POINT - X_PROBE_OFFSET_FROM_EXTRUDER);
             destination[Y_AXIS] = round(Z_SAFE_HOMING_Y_POINT - Y_PROBE_OFFSET_FROM_EXTRUDER);
-            destination[Z_AXIS] = -Z_RAISE_BEFORE_HOMING * home_dir(Z_AXIS);    // Set destination away from bed
+            destination[Z_AXIS] = current_position[Z_AXIS];
             feedrate = XY_TRAVEL_SPEED;
             // This could potentially move X, Y, Z all together
             line_to_destination();
@@ -5264,16 +5264,20 @@ void process_commands() {
 
     case 28: // G28: Home all axes, one at a time
 ////****FLO: Zuerst: Z hochfahren
-//// Raise Z before homing any other axes
-//// (Does this need to be "negative home direction?" Why not just use Z_RAISE_BEFORE_HOMING?)
-//destination[Z_AXIS] = -Z_RAISE_BEFORE_HOMING * home_dir(Z_AXIS);
-//feedrate = max_feedrate[Z_AXIS] * 60;
-//SERIAL_ECHO_START;
-//SERIAL_ECHOPAIR("z dest:", destination[Z_AXIS]);
-//SERIAL_ECHOLN("");
-//
-//line_to_destination();
-//st_synchronize();
+// Raise Z before homing any other axes
+// (Does this need to be "negative home direction?" Why not just use Z_RAISE_BEFORE_HOMING?)
+#if defined(Z_SAFE_HOMING) && defined(Z_RAISE_BEFORE_HOMING) && Z_RAISE_BEFORE_HOMING > 0
+	destination[Z_AXIS] = -Z_RAISE_BEFORE_HOMING * home_dir(Z_AXIS);
+	feedrate = max_feedrate[Z_AXIS] * 60;
+	SERIAL_ECHO_START;
+	SERIAL_ECHOPAIR("z dest:", destination[Z_AXIS]);
+	SERIAL_ECHOLN("");
+
+	line_to_destination();
+	st_synchronize();
+#endif
+
+
 ////*******	
 	
 	

@@ -421,6 +421,31 @@ const bool Z_PROBE_ENDSTOP_INVERTING = false; // set to true to invert the logic
 //const bool FIL_RUNOUT_INVERTING = true;  // Should be uncommented and true or false should assigned
 //#define ENDSTOPPULLUP_FIL_RUNOUT // Uncomment to use internal pullup for filament runout pins if the sensor is defined.
 
+// Flo AutoMESH: Z_Save_Homing muss auch bei AutoMESH verfügbar sein!
+
+  #define Z_RAISE_BEFORE_HOMING 10       // (in mm) Raise Z before homing (G28) for Probe Clearance.
+                                        // Be sure you have this distance over your Z_MAX_POS in case
+  #define Z_SAFE_HOMING   // This feature is meant to avoid Z homing with probe outside the bed area.
+                          // When defined, it will:
+                          // - Allow Z homing only after X and Y homing AND stepper drivers still enabled
+                          // - If stepper drivers timeout, it will need X and Y homing again before Z homing
+                          // - Position the probe in a defined XY point before Z Homing when homing all axis (G28)
+                          // - Block Z homing only when the probe is outside bed area.
+
+  #ifdef Z_SAFE_HOMING
+
+    #define Z_SAFE_HOMING_X_POINT (X_MAX_LENGTH/2)    // X point for Z homing when homing all axis (G28)
+    #define Z_SAFE_HOMING_Y_POINT (Y_MAX_LENGTH/2)    // Y point for Z homing when homing all axis (G28)
+
+  #endif
+  #define X_PROBE_OFFSET_FROM_EXTRUDER -25     // Probe on: -left  +right
+  #define Y_PROBE_OFFSET_FROM_EXTRUDER -29     // Probe on: -front +behind
+  #define Z_PROBE_OFFSET_FROM_EXTRUDER -12.35  // -below (always!)
+  #define XY_TRAVEL_SPEED 8000         // X and Y axis travel speed between probes, in mm/min
+  #define Z_RAISE_BEFORE_PROBING 15   //How much the extruder will be raised before traveling to the first probing point.
+  #define Z_RAISE_BETWEEN_PROBINGS 5  //How much the extruder will be raised when traveling from between next probing points
+  #define Z_RAISE_AFTER_PROBING 15    //How much the extruder will be raised after the last probing point.
+
 //===========================================================================
 //============================ Mesh Bed Leveling ============================
 //===========================================================================
@@ -497,18 +522,7 @@ const bool Z_PROBE_ENDSTOP_INVERTING = false; // set to true to invert the logic
 
   // Offsets to the probe relative to the extruder tip (Hotend - Probe)
   // X and Y offsets must be integers
-  #define X_PROBE_OFFSET_FROM_EXTRUDER -25     // Probe on: -left  +right
-  #define Y_PROBE_OFFSET_FROM_EXTRUDER -29     // Probe on: -front +behind
-  #define Z_PROBE_OFFSET_FROM_EXTRUDER -12.35  // -below (always!)
 
-  #define Z_RAISE_BEFORE_HOMING 20       // (in mm) Raise Z before homing (G28) for Probe Clearance.
-                                        // Be sure you have this distance over your Z_MAX_POS in case
-
-  #define XY_TRAVEL_SPEED 8000         // X and Y axis travel speed between probes, in mm/min
-
-  #define Z_RAISE_BEFORE_PROBING 15   //How much the extruder will be raised before traveling to the first probing point.
-  #define Z_RAISE_BETWEEN_PROBINGS 5  //How much the extruder will be raised when traveling from between next probing points
-  #define Z_RAISE_AFTER_PROBING 15    //How much the extruder will be raised after the last probing point.
 
 //   #define Z_PROBE_END_SCRIPT "G1 Z10 F12000\nG1 X15 Y330\nG1 Z0.5\nG1 Z10" //These commands will be executed in the end of G29 routine.
                                                                             //Useful to retract a deployable probe.
@@ -526,19 +540,7 @@ const bool Z_PROBE_ENDSTOP_INVERTING = false; // set to true to invert the logic
 //If you have enabled the Bed Auto Leveling and are using the same Z Probe for Z Homing,
 //it is highly recommended you let this Z_SAFE_HOMING enabled!!!
 
-  #define Z_SAFE_HOMING   // This feature is meant to avoid Z homing with probe outside the bed area.
-                          // When defined, it will:
-                          // - Allow Z homing only after X and Y homing AND stepper drivers still enabled
-                          // - If stepper drivers timeout, it will need X and Y homing again before Z homing
-                          // - Position the probe in a defined XY point before Z Homing when homing all axis (G28)
-                          // - Block Z homing only when the probe is outside bed area.
 
-  #ifdef Z_SAFE_HOMING
-
-    #define Z_SAFE_HOMING_X_POINT (X_MAX_LENGTH/2)    // X point for Z homing when homing all axis (G28)
-    #define Z_SAFE_HOMING_Y_POINT (Y_MAX_LENGTH/2)    // Y point for Z homing when homing all axis (G28)
-
-  #endif
 
   // Support for a dedicated Z PROBE endstop separate from the Z MIN endstop.
   // If you would like to use both a Z PROBE and a Z MIN endstop together or just a Z PROBE with a custom pin, uncomment #define Z_PROBE_ENDSTOP and read the instructions below.
