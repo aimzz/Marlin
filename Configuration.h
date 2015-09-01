@@ -440,6 +440,7 @@ const bool Z_PROBE_ENDSTOP_INVERTING = false; // set to true to invert the logic
   #define MESH_NUM_X_POINTS 3  // Don't use more than 7 points per axis, implementation limited
   #define MESH_NUM_Y_POINTS 3
   #define MESH_HOME_SEARCH_Z 5  // Z after Home, bed somewhere below but above 0.0
+  #define MESH_Z_TRAVEL 10		// Z-Offset bei Travel-Moves
 #endif  // MESH_BED_LEVELING
 
 //===========================================================================

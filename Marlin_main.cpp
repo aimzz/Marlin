@@ -2202,7 +2202,8 @@ inline void gcode_G28() {
 	// /ENDSTOPS AKTIVIEREN
 
 // ES FOLGT: INHALT VON    do_blocking_move_to(current_position[X_AXIS], current_position[Y_AXIS], MESH_HOME_SEARCH_Z); // this also updates current_position
-    float oldFeedRate = feedrate;
+    if (probe_point == 1) {
+	float oldFeedRate = feedrate;
 
     #ifdef DELTA
 
@@ -2230,7 +2231,7 @@ inline void gcode_G28() {
     #endif
 
     feedrate = oldFeedRate;
-	
+	}
 //ENDE DOBLOCKING MOVE
 
 feedrate = homing_feedrate[Z_AXIS];	//ok
@@ -2264,7 +2265,8 @@ sync_plan_position();
 
 
           mbl.set_z(ix, iy, current_position[Z_AXIS]);
-          current_position[Z_AXIS] = MESH_HOME_SEARCH_Z;
+ //         current_position[Z_AXIS] = MESH_HOME_SEARCH_Z;
+			current_position[Z_AXIS] =MESH_Z_TRAVEL;
           plan_buffer_line(current_position[X_AXIS], current_position[Y_AXIS], current_position[Z_AXIS], current_position[E_AXIS], homing_feedrate[X_AXIS]/60, active_extruder);
           st_synchronize();
         }
@@ -2278,6 +2280,7 @@ sync_plan_position();
           plan_buffer_line(current_position[X_AXIS], current_position[Y_AXIS], current_position[Z_AXIS], current_position[E_AXIS], homing_feedrate[X_AXIS]/60, active_extruder);
           st_synchronize();
           probe_point++;
+		  enqueuecommands_P(PSTR("G99 S2"));
         }
         else {
           // After recording the last point, activate the mbl and home
