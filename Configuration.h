@@ -438,8 +438,8 @@ const bool Z_PROBE_ENDSTOP_INVERTING = false; // set to true to invert the logic
     #define Z_SAFE_HOMING_Y_POINT (Y_MAX_LENGTH/2)    // Y point for Z homing when homing all axis (G28)
 
   #endif
-  #define X_PROBE_OFFSET_FROM_EXTRUDER -25     // Probe on: -left  +right
-  #define Y_PROBE_OFFSET_FROM_EXTRUDER -29     // Probe on: -front +behind
+  #define X_PROBE_OFFSET_FROM_EXTRUDER 0     // Probe on: -left  +right
+  #define Y_PROBE_OFFSET_FROM_EXTRUDER -15     // Probe on: -front +behind
   #define Z_PROBE_OFFSET_FROM_EXTRUDER -12.35  // -below (always!)
   #define XY_TRAVEL_SPEED 8000         // X and Y axis travel speed between probes, in mm/min
   #define Z_RAISE_BEFORE_PROBING 15   //How much the extruder will be raised before traveling to the first probing point.

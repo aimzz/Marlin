@@ -2204,39 +2204,33 @@ inline void gcode_G28() {
 // ES FOLGT: INHALT VON    do_blocking_move_to(current_position[X_AXIS], current_position[Y_AXIS], MESH_HOME_SEARCH_Z); // this also updates current_position
     if (probe_point == 1) {
 	float oldFeedRate = feedrate;
-
     #ifdef DELTA
-
     feedrate = XY_TRAVEL_SPEED;
-    
     destination[X_AXIS] = current_position[X_AXIS];
     destination[Y_AXIS] = current_position[Y_AXIS];
     destination[Z_AXIS] = current_position[Z_AXIS]+5;
     prepare_move_raw(); // this will also set_current_to_destination
     st_synchronize();
-
     #else
-
     feedrate = homing_feedrate[Z_AXIS];
-
     current_position[Z_AXIS] = current_position[Z_AXIS] + 5;
     line_to_current_position();
     st_synchronize();
-
     feedrate =300;
-
     line_to_current_position();
     st_synchronize();
-
     #endif
-
     feedrate = oldFeedRate;
 	}
 //ENDE DOBLOCKING MOVE
 
+//Offset Sensor <-> Düse: do_blocking_move_to(x - X_PROBE_OFFSET_FROM_EXTRUDER, y - Y_PROBE_OFFSET_FROM_EXTRUDER, current_position[Z_AXIS]); // this also updates current_position
+
+
+
 feedrate = homing_feedrate[Z_AXIS];	//ok
 // move down until you find the bed
-float zPosition = -10;//ok
+float zPosition = -30;//ok
 line_to_z(zPosition);//ok
 st_synchronize();//ok
 
@@ -2275,8 +2269,8 @@ sync_plan_position();
           ix = probe_point % MESH_NUM_X_POINTS;
           iy = probe_point / MESH_NUM_X_POINTS;
           if (iy & 1) ix = (MESH_NUM_X_POINTS - 1) - ix; // zig-zag
-          current_position[X_AXIS] = mbl.get_x(ix);
-          current_position[Y_AXIS] = mbl.get_y(iy);
+          current_position[X_AXIS] = mbl.get_x(ix)- X_PROBE_OFFSET_FROM_EXTRUDER;
+          current_position[Y_AXIS] = mbl.get_y(iy)- Y_PROBE_OFFSET_FROM_EXTRUDER;
           plan_buffer_line(current_position[X_AXIS], current_position[Y_AXIS], current_position[Z_AXIS], current_position[E_AXIS], homing_feedrate[X_AXIS]/60, active_extruder);
           st_synchronize();
           probe_point++;
@@ -2287,7 +2281,7 @@ sync_plan_position();
           SERIAL_PROTOCOLLNPGM("Mesh probing done.");
           probe_point = -1;
           mbl.active = 1;
-          enqueuecommands_P(PSTR("G28"));
+          //enqueuecommands_P(PSTR("G28"));
         }
         break;
 
@@ -5267,6 +5261,7 @@ void process_commands() {
 // Raise Z before homing any other axes
 // (Does this need to be "negative home direction?" Why not just use Z_RAISE_BEFORE_HOMING?)
 #if defined(Z_SAFE_HOMING) && defined(Z_RAISE_BEFORE_HOMING) && Z_RAISE_BEFORE_HOMING > 0
+if (!axis_known_position[X_AXIS] && !axis_known_position[Y_AXIS]||axis_known_position[Z_AXIS]&&current_position[Z_AXIS]<5) {	
 	destination[Z_AXIS] = -Z_RAISE_BEFORE_HOMING * home_dir(Z_AXIS);
 	feedrate = max_feedrate[Z_AXIS] * 60;
 	SERIAL_ECHO_START;
@@ -5275,6 +5270,11 @@ void process_commands() {
 
 	line_to_destination();
 	st_synchronize();
+// Planer mitteilen dass neue Z-Pos angefahren!
+      float zPos_after_Raise = st_get_position_mm(Z_AXIS);
+      plan_set_position(current_position[X_AXIS], current_position[Y_AXIS], zPos_after_Raise, current_position[E_AXIS]);
+
+}
 #endif
 
 
