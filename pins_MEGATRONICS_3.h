@@ -66,10 +66,10 @@
 #define FAN_PIN 6
 #define FAN2_PIN 7
 
-#define TEMP_0_PIN   (TEMP_SENSOR_0 == -1 ?  11 : 15) // ANALOG NUMBERING
-#define TEMP_1_PIN   (TEMP_SENSOR_1 == -1 ?  10 : 13) // ANALOG NUMBERING
-#define TEMP_2_PIN   (TEMP_SENSOR_2 == -1 ?   9 : 12) // ANALOG NUMBERING
-#define TEMP_BED_PIN (TEMP_SENSOR_BED == -1 ? 8 : 14) // ANALOG NUMBERING
+#define TEMP_0_PIN   (TEMP_SENSOR_0 == -1 ?  10 : 14) // ANALOG NUMBERING war 11
+#define TEMP_1_PIN   (TEMP_SENSOR_1 == -1 ?  9 : 13) // ANALOG NUMBERING   9 war 10
+#define TEMP_2_PIN   (TEMP_SENSOR_2 == -1 ?   8 : 12) // ANALOG NUMBERING   war 9
+#define TEMP_BED_PIN (TEMP_SENSOR_BED == -1 ? 11 : 15) // ANALOG NUMBERING   war 8
 
 #define BEEPER 61
 

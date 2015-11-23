@@ -276,10 +276,9 @@ static uint8_t target_extruder;
 bool no_wait_for_cooling = true;
 bool target_direction;
 
-#ifdef ENABLE_AUTO_BED_LEVELING
   int xy_travel_speed = XY_TRAVEL_SPEED;
   float zprobe_zoffset = -Z_PROBE_OFFSET_FROM_EXTRUDER;
-#endif
+
 
 #if defined(Z_DUAL_ENDSTOPS) && !defined(DELTA)
   float z_endstop_adj = 0;
@@ -1045,6 +1044,10 @@ static void axis_is_at_home(int axis) {
     #if defined(ENABLE_AUTO_BED_LEVELING) && Z_HOME_DIR < 0
       if (axis == Z_AXIS) current_position[Z_AXIS] += zprobe_zoffset;
     #endif
+	    #if defined(MESH_BED_LEVELING) && Z_HOME_DIR < 0
+	    if (axis == Z_AXIS) current_position[Z_AXIS] += zprobe_zoffset;
+	    #endif
+	
   }
 }
 
@@ -1066,6 +1069,11 @@ inline void line_to_current_position() {
 inline void line_to_z(float zPosition) {
   plan_buffer_line(current_position[X_AXIS], current_position[Y_AXIS], zPosition, current_position[E_AXIS], feedrate/60, active_extruder);
 }
+//line_to_z_slow() feedrate/2
+inline void line_to_z_slow(float zPosition) {
+	plan_buffer_line(current_position[X_AXIS], current_position[Y_AXIS], zPosition, current_position[E_AXIS], feedrate/120, active_extruder);
+}
+
 inline void line_to_destination(float mm_m) {
   plan_buffer_line(destination[X_AXIS], destination[Y_AXIS], destination[Z_AXIS], destination[E_AXIS], mm_m/60, active_extruder);
 }
@@ -1833,7 +1841,7 @@ inline void gcode_G4() {
  *  Y   Home to the Y endstop
  *  Z   Home to the Z endstop
  *
- */
+ *///G28
 inline void gcode_G28() {
 
   // For auto bed leveling, clear the level matrix
@@ -1846,8 +1854,8 @@ inline void gcode_G28() {
 
   // For manual bed leveling deactivate the matrix temporarily
   #ifdef MESH_BED_LEVELING
-    uint8_t mbl_was_active = mbl.active;
-    mbl.active = 0;
+		uint8_t mbl_was_active = mbl.active;
+		mbl.active = 0;
   #endif
 
   saved_feedrate = feedrate;
@@ -2085,8 +2093,9 @@ inline void gcode_G28() {
   #endif
 
   // For manual leveling move back to 0,0
+  ////28.10
   #ifdef MESH_BED_LEVELING
-    if (mbl_was_active) {
+   if (mbl_was_active) {
       current_position[X_AXIS] = mbl.get_x(0);
       current_position[Y_AXIS] = mbl.get_y(0);
       set_destination_to_current();
@@ -2099,7 +2108,8 @@ inline void gcode_G28() {
     }
   #endif
 
-  feedrate = saved_feedrate;
+  //feedrate = saved_feedrate;
+  feedrate = 1500.0;
   feedrate_multiplier = saved_feedrate_multiplier;
   refresh_cmd_timeout();
   endstops_hit_on_purpose(); // clear endstop hit flags
@@ -2108,7 +2118,7 @@ inline void gcode_G28() {
 //FLO: G99: AutoMESH test
 #ifdef MESH_BED_LEVELING
 
-  enum MeshLevelingState { MeshReport, MeshStart, MeshNext, MeshSet };
+  enum MeshLevelingState { MeshReport, MeshStart, MeshNext, MeshSet, MeshReset };
 
   /**
    * G29: Mesh-based Z-Probe, probes a grid and produces a
@@ -2133,7 +2143,7 @@ inline void gcode_G28() {
 
     static int probe_point = -1;
     MeshLevelingState state = code_seen('S') || code_seen('s') ? (MeshLevelingState)code_value_short() : MeshReport;
-    if (state < 0 || state > 3) {
+    if (state < 0 || state > 4) {
       SERIAL_PROTOCOLLNPGM("S out of range (0-3).");
       return;
     }
@@ -2245,10 +2255,11 @@ st_synchronize();
 endstops_hit_on_purpose(); // clear endstop hit flags
 
 // move back down slowly to find bed
-set_homing_bump_feedrate(Z_AXIS);
+// 19.11 set_homing_bump_feedrate(Z_AXIS);
+feedrate = homing_feedrate[Z_AXIS]/4;
 
 zPosition -= home_bump_mm(Z_AXIS) * 2;
-line_to_z(zPosition);
+line_to_z_slow(zPosition);
 st_synchronize();
 endstops_hit_on_purpose(); // clear endstop hit flags
 
@@ -2259,8 +2270,8 @@ sync_plan_position();
 
 
           mbl.set_z(ix, iy, current_position[Z_AXIS]);
- //         current_position[Z_AXIS] = MESH_HOME_SEARCH_Z;
-			current_position[Z_AXIS] =MESH_Z_TRAVEL;
+          current_position[Z_AXIS] = MESH_HOME_SEARCH_Z;
+//			current_position[Z_AXIS] =MESH_Z_TRAVEL;
           plan_buffer_line(current_position[X_AXIS], current_position[Y_AXIS], current_position[Z_AXIS], current_position[E_AXIS], homing_feedrate[X_AXIS]/60, active_extruder);
           st_synchronize();
         }
@@ -2281,9 +2292,17 @@ sync_plan_position();
           SERIAL_PROTOCOLLNPGM("Mesh probing done.");
           probe_point = -1;
           mbl.active = 1;
-          //enqueuecommands_P(PSTR("G28"));
+          //enqueuecommands_P(PSTR("G1 X0 F1000\nG1 Y0 F1000\nG1 Z0 F1000"));	//war: G28
+		  enqueuecommands_P(PSTR("G99 S0\nM500\nG28"));	//war: G28
         }
         break;
+		
+		case MeshReset:
+			mbl.reset();
+			mbl.active=0;
+			enqueuecommands_P(PSTR("M500"));
+			SERIAL_PROTOCOLLNPGM("Mesh Leveling information deleted.");
+			break;
 
       case MeshSet:
         if (code_seen('X') || code_seen('x')) {
@@ -2422,7 +2441,7 @@ sync_plan_position();
           SERIAL_PROTOCOLLNPGM("Mesh probing done.");
           probe_point = -1;
           mbl.active = 1;
-          enqueuecommands_P(PSTR("G28"));
+          enqueuecommands_P(PSTR("G28"));	//war: G28
         }
         break;
 
@@ -4201,9 +4220,9 @@ inline void gcode_M206() {
     if (code_seen('X')) extruder_offset[X_AXIS][target_extruder] = code_value();
     if (code_seen('Y')) extruder_offset[Y_AXIS][target_extruder] = code_value();
 
-    #ifdef DUAL_X_CARRIAGE
+   // #ifdef DUAL_X_CARRIAGE FLO
       if (code_seen('Z')) extruder_offset[Z_AXIS][target_extruder] = code_value();
-    #endif
+   // #endif FLO
 
     SERIAL_ECHO_START;
     SERIAL_ECHOPGM(MSG_HOTEND_OFFSET);
@@ -4212,10 +4231,10 @@ inline void gcode_M206() {
       SERIAL_ECHO(extruder_offset[X_AXIS][e]);
       SERIAL_CHAR(',');
       SERIAL_ECHO(extruder_offset[Y_AXIS][e]);
-      #ifdef DUAL_X_CARRIAGE
+      //#ifdef DUAL_X_CARRIAGEv FLO
         SERIAL_CHAR(',');
         SERIAL_ECHO(extruder_offset[Z_AXIS][e]);
-      #endif
+     // #endif FLO
     }
     SERIAL_EOL;
   }
@@ -5147,7 +5166,6 @@ inline void gcode_T() {
           current_position[Z_AXIS] = current_position[Z_AXIS] -
                        extruder_offset[Z_AXIS][active_extruder] +
                        extruder_offset[Z_AXIS][tmp_extruder];
-
           active_extruder = tmp_extruder;
 
           // This function resets the max/min values - the current position may be overwritten below.
@@ -5174,10 +5192,14 @@ inline void gcode_T() {
             delayed_move_time = 0;
           }
         #else // !DUAL_X_CARRIAGE
-          // Offset extruder (only by XY)
-          for (int i=X_AXIS; i<=Y_AXIS; i++)
-            current_position[i] += extruder_offset[i][tmp_extruder] - extruder_offset[i][active_extruder];
-          // Set the new active extruder and position
+		//23.11 FLO:
+		current_position[X_AXIS] += extruder_offset[X_AXIS][tmp_extruder] - extruder_offset[X_AXIS][active_extruder];
+		current_position[Y_AXIS] += extruder_offset[Y_AXIS][tmp_extruder] - extruder_offset[Y_AXIS][active_extruder];	
+		current_position[Z_AXIS] += extruder_offset[Z_AXIS][tmp_extruder] - extruder_offset[Z_AXIS][active_extruder];	
+          //// Offset extruder (only by XY)
+          //for (int i=X_AXIS; i<=Y_AXIS; i++)
+            //current_position[i] += extruder_offset[i][tmp_extruder] - extruder_offset[i][active_extruder];
+          //// Set the new active extruder and position
           active_extruder = tmp_extruder;
         #endif // !DUAL_X_CARRIAGE
         #ifdef DELTA
@@ -5815,6 +5837,11 @@ void clamp_to_software_endstops(float target[3]) {
       if (Z_PROBE_OFFSET_FROM_EXTRUDER < 0) negative_z_offset += Z_PROBE_OFFSET_FROM_EXTRUDER;
       if (home_offset[Z_AXIS] < 0) negative_z_offset += home_offset[Z_AXIS];
     #endif
+	    #ifdef MESH_BED_LEVELING
+	    if (Z_PROBE_OFFSET_FROM_EXTRUDER < 0) negative_z_offset += Z_PROBE_OFFSET_FROM_EXTRUDER;
+	    if (home_offset[Z_AXIS] < 0) negative_z_offset += home_offset[Z_AXIS];
+	    #endif
+	
     NOLESS(target[Z_AXIS], min_pos[Z_AXIS] + negative_z_offset);
   }
 
